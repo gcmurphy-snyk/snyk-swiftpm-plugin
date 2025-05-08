@@ -80,20 +80,16 @@ const buildDepGraph = async (
 };
 
 export const computeDepGraph = async (
+  root: string | undefined,
   targetFile: string,
-  packageManager: PkgManager | undefined = { name: 'swift', version: 'n/a' },
-  rootPkg: PkgInfo | undefined = undefined,
 ): Promise<DepGraph> => {
   if (!fs.existsSync(targetFile)) {
     throw new Error(`File not found: ${targetFile}`);
   }
 
-  const manager: PkgManager = packageManager || {
-    name: 'swift',
-    version: 'n/a',
-  };
-  const builder = rootPkg
-    ? new DepGraphBuilder(manager, rootPkg)
+  const manager: PkgManager = { name: 'swift' };
+  const builder = root
+    ? new DepGraphBuilder(manager, { name: root, version: '0.0.0' })
     : new DepGraphBuilder(manager);
 
   return await buildDepGraph(builder, targetFile);

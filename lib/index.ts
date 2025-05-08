@@ -1,16 +1,17 @@
 import { computeDepGraph as swiftDepGraph } from './swiftpm/compute-depgraph';
 import { computeDepGraph as carthageDepGraph } from './carthage/deps';
-import { DepGraph, PkgManager, PkgInfo } from '@snyk/dep-graph';
+import { DepGraph } from '@snyk/dep-graph';
 import { lookpath } from 'lookpath';
+import * as Debug from 'debug';
 import * as path from 'path';
 
 interface Options {
   debug?: boolean;
   file?: string;
   args?: string[];
-  pkgManager?: PkgManager;
-  rootPkg?: PkgInfo;
 }
+
+const debug = Debug('snyk');
 
 // we assume that swift considers folders as packages instead of manifest files
 function pathToPosix(fpath) {
@@ -28,6 +29,9 @@ export async function inspect(
   targetFile: string,
   options?: Options,
 ) {
+  debug(`swift-plugin: root = ${root}, ${targetFile}`);
+  debug(options);
+
   const filename = path.basename(targetFile);
   let depGraph: DepGraph;
   if (filename == 'Package.swift') {
@@ -41,11 +45,7 @@ export async function inspect(
     }
     depGraph = await swiftDepGraph(root, targetFile, options?.args);
   } else if (filename == 'Cartfile.resolved') {
-    depGraph = await carthageDepGraph(
-      targetFile,
-      options?.pkgManager,
-      options?.rootPkg,
-    );
+    depGraph = await carthageDepGraph(root, targetFile);
   } else {
     throw new Error(
       `${filename} is not supported by Swift Package Manager or Carthage. ` +
