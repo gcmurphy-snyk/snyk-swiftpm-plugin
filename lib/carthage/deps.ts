@@ -4,8 +4,9 @@ import {
   PkgManager,
   DepGraph,
 } from '@snyk/dep-graph';
-import * as path from 'path';
+
 import * as fs from 'fs';
+import * as path from 'path';
 import { CartfileEntry } from './types';
 import { parseInput } from './parser';
 
@@ -80,17 +81,21 @@ const buildDepGraph = async (
 };
 
 export const computeDepGraph = async (
-  root: string | undefined,
+  root: string,
   targetFile: string,
+  name: string,
+  version: string,
 ): Promise<DepGraph> => {
   if (!fs.existsSync(targetFile)) {
     throw new Error(`File not found: ${targetFile}`);
   }
-
   const manager: PkgManager = { name: 'swift' };
-  const builder = root
-    ? new DepGraphBuilder(manager, { name: root, version: '0.0.0' })
-    : new DepGraphBuilder(manager);
-
+  /*
+  const rootPath = path.resolve(root);
+  const relativePath = path.resolve(path.dirname(targetFile));
+  const childDependency =
+    rootPath !== relativePath && relativePath.startsWith(rootPath);
+  */
+  const builder = new DepGraphBuilder(manager, { name, version });
   return await buildDepGraph(builder, targetFile);
 };

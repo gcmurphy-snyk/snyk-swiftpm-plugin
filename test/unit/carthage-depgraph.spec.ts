@@ -11,12 +11,14 @@ const fixturePath = (fixtureName) => {
 describe('when analysing a Carthage project', () => {
   it('should be able discover all resolved carthage dependencies', async () => {
     const graph = await computeDepGraph(
-      '_root',
+      '.',
       fixturePath('complex/Cartfile.resolved'),
+      'complex',
+      'abcdef01',
     );
     expect(graph).toBeDefined();
     const expected = new Set([
-      '_root@0.0.0',
+      `complex@abcdef01`,
       'github.com/robrix/Box@1.2.2',
       'github.com/antitypical/Result@0.4.3',
       'github.com/ReactiveCocoa/ReactiveCocoa@12110113b02b22c7d3a1e7aa423d76340eb19157',
@@ -32,20 +34,22 @@ describe('when analysing a Carthage project', () => {
 
   it('should throw an error if the root Cartfile.resolved is missing', async () => {
     const nonExistentPath = fixturePath('non-existent-path/Cartfile.resolved');
-    await expect(computeDepGraph('_root', nonExistentPath)).rejects.toThrow(
-      `File not found: ${nonExistentPath}`,
-    );
+    await expect(
+      computeDepGraph('.', nonExistentPath, 'non-existent-path', 'cafebabe'),
+    ).rejects.toThrow(`File not found: ${nonExistentPath}`);
   });
 
   it('should handle dependencies without their own Cartfile.resolved', async () => {
     const graph = await computeDepGraph(
-      '_root',
+      '.',
       fixturePath('spm-transitive/Cartfile.resolved'),
+      'spm-transitive',
+      '12345678',
     );
     expect(graph).toBeDefined();
 
     const expected = new Set<string>([
-      '_root@0.0.0',
+      `spm-transitive@12345678`,
       'github.com/OrgA/DepA@1.0.0',
     ]);
     const actual = packageSet(graph);
@@ -54,13 +58,15 @@ describe('when analysing a Carthage project', () => {
 
   it('should handle diamond dependencies correctly', async () => {
     const graph = await computeDepGraph(
-      '_root',
+      '.',
       fixturePath('diamond/Cartfile.resolved'),
+      'diamond',
+      'deadbeef',
     );
     expect(graph).toBeDefined();
 
     const expected = new Set([
-      '_root@0.0.0',
+      `diamond@deadbeef`,
       'github.com/OrgB/DepB@2.0.0',
       'github.com/OrgC/DepC@3.0.0',
       'github.com/OrgD/DepD@4.0.0',

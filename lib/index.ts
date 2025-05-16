@@ -4,6 +4,7 @@ import { DepGraph } from '@snyk/dep-graph';
 import { lookpath } from 'lookpath';
 import * as Debug from 'debug';
 import * as path from 'path';
+import { execFileSync } from 'child_process';
 
 interface Options {
   debug?: boolean;
@@ -22,6 +23,16 @@ function pathToPosix(fpath) {
   }
   return parts.join(path.posix.sep);
 }
+
+const gitRef = (targetFile: string): string | undefined => {
+  const args = ['log', '-1', '--oneline', '--', targetFile];
+  try {
+    const ref = execFileSync('git', args, { stdio: 'pipe', encoding: 'utf8' });
+    return ref.split(' ').at(0);
+  } catch (e) {
+    throw new Error(`unable to determine git ref of ${targetFile}: ${e}`);
+  }
+};
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function inspect(
@@ -45,7 +56,16 @@ export async function inspect(
     }
     depGraph = await swiftDepGraph(root, targetFile, options?.args);
   } else if (filename == 'Cartfile.resolved') {
-    depGraph = await carthageDepGraph(root, targetFile);
+    const gitPath = await lookpath('git');
+    if (!gitPath) {
+      debug('git not detected - using default version for root package');
+    }
+    depGraph = await carthageDepGraph(
+      root,
+      targetFile,
+      path.dirname(targetFile),
+      gitRef(targetFile) || '0.0.0',
+    );
   } else {
     throw new Error(
       `${filename} is not supported by Swift Package Manager or Carthage. ` +
