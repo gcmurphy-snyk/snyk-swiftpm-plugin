@@ -30,7 +30,21 @@ const gitRef = (targetFile: string): string | undefined => {
     const ref = execFileSync('git', args, { stdio: 'pipe', encoding: 'utf8' });
     return ref.split(' ').at(0);
   } catch (e) {
-    throw new Error(`unable to determine git ref of ${targetFile}: ${e}`);
+    debug(`unable to determine git ref of ${targetFile}: ${e}`);
+  }
+};
+
+const gitRemote = (repoDir: string): string | undefined => {
+  const args = ['remote', 'get-url', '--all', 'origin'];
+  try {
+    const stdio = execFileSync('git', args, {
+      stdio: 'pipe',
+      encoding: 'utf8',
+      cwd: repoDir,
+    });
+    return stdio.trim();
+  } catch (e) {
+    debug(`unable to determine git remote url: ${e}`);
   }
 };
 
@@ -63,7 +77,7 @@ export async function inspect(
     depGraph = await carthageDepGraph(
       root,
       targetFile,
-      path.dirname(targetFile),
+      gitRemote(root) || path.dirname(targetFile),
       gitRef(targetFile) || '0.0.0',
     );
   } else {
